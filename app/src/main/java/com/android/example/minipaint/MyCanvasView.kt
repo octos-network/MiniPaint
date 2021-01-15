@@ -1,10 +1,7 @@
 package com.android.example.minipaint
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Path
+import android.graphics.*
 import android.support.v4.content.res.ResourcesCompat
 import android.view.MotionEvent
 import android.view.View
@@ -44,17 +41,25 @@ class MyCanvasView(context: Context) : View(context) {
 
     private val touchTolerance = ViewConfiguration.get(context).scaledTouchSlop
 
+    private lateinit var frame: Rect
+
     override fun onSizeChanged(width: Int, height: Int, oldWidth: Int, oldHeight: Int) {
         super.onSizeChanged(width, height, oldWidth, oldHeight)
         if (::extraBitmap.isInitialized) extraBitmap.recycle()
         extraBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         extraCanvas = Canvas(extraBitmap)
         extraCanvas.drawColor(backgroundColor)
+
+        // Calculate a rectangular frame around the picture.
+        val inset = 40
+        frame = Rect(inset, inset, width - inset, height - inset)
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.drawBitmap(extraBitmap, 0f, 0f, null)
+        // Draw a frame around the canvas.
+        canvas.drawRect(frame, paint)
     }
 
     private fun touchStart() {
@@ -70,7 +75,12 @@ class MyCanvasView(context: Context) : View(context) {
         if (dx >= touchTolerance || dy >= touchTolerance) {
             // QuadTo() adds a quadratic bezier from the last point,
             // approaching control point (x1,y1), and ending at (x2,y2).
-            path.quadTo(currentX, currentY, (motionTouchEventX + currentX) / 2, (motionTouchEventY + currentY) / 2)
+            path.quadTo(
+                currentX,
+                currentY,
+                (motionTouchEventX + currentX) / 2,
+                (motionTouchEventY + currentY) / 2
+            )
             currentX = motionTouchEventX
             currentY = motionTouchEventY
             // Draw the path in the extra bitmap to cache it.
